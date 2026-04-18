@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人仪表盘</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Replit 个人仪表盘</p>
+          <h1>备忘录、天气、时间与近期假期</h1>
+          <p class="subtitle">中文界面，账号隔离，跨设备查看你的私密内容。</p>
+        </div>
+        <div id="authActions" class="hero-actions hidden">
+          <span id="userEmail"></span>
+          <button id="logoutButton" class="ghost">退出登录</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="authSection" class="panel auth-grid">
+          <form id="loginForm" class="card">
+            <h2>登录</h2>
+            <label>邮箱<input name="email" type="email" required /></label>
+            <label>密码<input name="password" type="password" required /></label>
+            <button type="submit">登录</button>
+          </form>
+          <form id="registerForm" class="card">
+            <h2>注册</h2>
+            <label>邮箱<input name="email" type="email" required /></label>
+            <label>密码<input name="password" type="password" required /></label>
+            <button type="submit">注册并登录</button>
+          </form>
+        </section>
+
+        <section id="dashboardSection" class="hidden dashboard-grid">
+          <section class="panel time-panel">
+            <div class="time-row">
+              <div>
+                <h2>当前时间</h2>
+                <div id="clock" class="clock">--:--:--</div>
+                <div id="dateLabel" class="date-label">--</div>
+              </div>
+              <div class="tips">
+                <strong>提醒说明</strong>
+                <p>当前版本只支持站内在线提醒，关闭页面后不会推送。</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel reminder-panel">
+            <div class="panel-head">
+              <h2>到点提醒</h2>
+              <span id="reminderCount" class="badge">0</span>
+            </div>
+            <div id="reminderList" class="stack empty-state">暂无到点提醒</div>
+          </section>
+
+          <section class="panel memo-panel">
+            <div class="panel-head">
+              <h2>备忘录</h2>
+              <button id="newMemoButton" class="ghost">新建</button>
+            </div>
+            <form id="memoForm" class="memo-form">
+              <input type="hidden" name="memoId" />
+              <label>标题<input name="title" type="text" maxlength="120" required /></label>
+              <label>内容<textarea name="content" rows="4" placeholder="记录今天的零碎事项..." ></textarea></label>
+              <label>提醒时间<input name="remindAt" type="datetime-local" /></label>
+              <label>图片附件<input id="imageInput" name="image" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+              <div id="imagePreviewWrap" class="image-preview hidden">
+                <img id="imagePreview" alt="图片预览" />
+                <button type="button" id="removeImageButton" class="ghost small">移除图片</button>
+              </div>
+              <div class="form-actions">
+                <button type="submit">保存备忘录</button>
+                <button type="button" id="cancelEditButton" class="ghost hidden">取消编辑</button>
+              </div>
+            </form>
+            <div id="memoList" class="memo-list empty-state">暂无备忘录</div>
+          </section>
+
+          <section class="panel weather-panel">
+            <div class="panel-head">
+              <h2>天气与常用城市</h2>
+            </div>
+            <div class="weather-controls">
+              <form id="citySearchForm" class="inline-form">
+                <input id="citySearchInput" type="text" placeholder="手动搜索城市，例如 上海 / Beijing" />
+                <button type="submit">搜索</button>
+              </form>
+              <div id="citySearchResults" class="search-results empty-state">搜索后可保存常用城市</div>
+            </div>
+            <div id="savedCities" class="city-chips empty-state">暂无常用城市</div>
+            <div id="weatherCard" class="weather-card empty-state">请先添加一个常用城市</div>
+          </section>
+
+          <section class="panel holiday-panel">
+            <div class="panel-head">
+              <h2>未来 90 天假期</h2>
+              <span class="badge">中国大陆</span>
+            </div>
+            <div id="holidayList" class="stack empty-state">加载中...</div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+export const DATA_DIR = '.data';
+export const DB_FILE = '.data/db.json';
+export const SESSION_COOKIE = 'dashboard_session';
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+export const IDLE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const ABSOLUTE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const DEFAULT_LOCALE = 'zh-CN';
+export const DEFAULT_HOLIDAY_REGION = 'CN';
+export const DEFAULT_HOLIDAY_WINDOW_DAYS = 90;
+export const WEATHER_CACHE_TTL_MS = 10 * 60 * 1000;
+export const HOLIDAY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+export const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+export const LOGIN_RATE_LIMIT_MAX = 10;

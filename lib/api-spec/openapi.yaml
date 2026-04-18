@@ -1,22 +1,33 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: 个人仪表盘 API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: memos
+    description: Memo operations
+  - name: cities
+    description: City management
+  - name: weather
+    description: Weather
+  - name: holidays
+    description: Holidays
+  - name: dashboard
+    description: Dashboard bootstrap
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +35,348 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /bootstrap:
+    get:
+      operationId: getBootstrap
+      tags: [dashboard]
+      summary: Get all dashboard data for authenticated user
+      responses:
+        "200":
+          description: Bootstrap payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BootstrapPayload"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /memos:
+    get:
+      operationId: listMemos
+      tags: [memos]
+      summary: List memos for current user
+      responses:
+        "200":
+          description: Memos list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMemosResponse"
+    post:
+      operationId: createMemo
+      tags: [memos]
+      summary: Create a memo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoBody"
+      responses:
+        "201":
+          description: Created memo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoResponse"
+
+  /memos/{id}:
+    put:
+      operationId: updateMemo
+      tags: [memos]
+      summary: Update a memo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoBody"
+      responses:
+        "200":
+          description: Updated memo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMemo
+      tags: [memos]
+      summary: Delete a memo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /memos/{id}/ack-reminder:
+    post:
+      operationId: ackReminder
+      tags: [memos]
+      summary: Acknowledge a reminder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cities/search:
+    post:
+      operationId: searchCities
+      tags: [cities]
+      summary: Search cities by name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CitySearchBody"
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CitySearchResponse"
+
+  /cities:
+    get:
+      operationId: listCities
+      tags: [cities]
+      summary: List saved cities
+      responses:
+        "200":
+          description: Cities list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCitiesResponse"
+    post:
+      operationId: addCity
+      tags: [cities]
+      summary: Save a city
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddCityBody"
+      responses:
+        "201":
+          description: City saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCitiesResponse"
+
+  /cities/{id}/default:
+    post:
+      operationId: setDefaultCity
+      tags: [cities]
+      summary: Set a city as default
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCitiesResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cities/{id}:
+    delete:
+      operationId: deleteCity
+      tags: [cities]
+      summary: Delete a saved city
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListCitiesResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /weather:
+    get:
+      operationId: getWeather
+      tags: [weather]
+      summary: Get weather for default city
+      responses:
+        "200":
+          description: Weather data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeatherResponse"
+
+  /holidays:
+    get:
+      operationId: getHolidays
+      tags: [holidays]
+      summary: Get upcoming holidays
+      responses:
+        "200":
+          description: Holidays list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HolidaysResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +384,277 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+
+    RegisterBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        timezone:
+          type: string
+      required: [email, password]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+      required: [id, email]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserInfo"
+      required: [user]
+
+    Memo:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+          nullable: true
+        imageDataUrl:
+          type: string
+          nullable: true
+        remindAt:
+          type: string
+          nullable: true
+        reminderAcknowledgedAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, title, createdAt, updatedAt]
+
+    MemoBody:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+          nullable: true
+        remindAt:
+          type: string
+          nullable: true
+        imageDataUrl:
+          type: string
+          nullable: true
+      required: [title]
+
+    MemoResponse:
+      type: object
+      properties:
+        memo:
+          $ref: "#/components/schemas/Memo"
+      required: [memo]
+
+    ListMemosResponse:
+      type: object
+      properties:
+        memos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memo"
+      required: [memos]
+
+    City:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+        timezone:
+          type: string
+        isDefault:
+          type: boolean
+      required: [id, name, latitude, longitude, timezone, isDefault]
+
+    AddCityBody:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+        timezone:
+          type: string
+        isDefault:
+          type: boolean
+      required: [name, latitude, longitude, timezone]
+
+    CitySearchBody:
+      type: object
+      properties:
+        query:
+          type: string
+      required: [query]
+
+    CitySearchResult:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+        timezone:
+          type: string
+        admin1:
+          type: string
+          nullable: true
+      required: [name, latitude, longitude, timezone]
+
+    CitySearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/CitySearchResult"
+      required: [results]
+
+    ListCitiesResponse:
+      type: object
+      properties:
+        cities:
+          type: array
+          items:
+            $ref: "#/components/schemas/City"
+      required: [cities]
+
+    WeatherData:
+      type: object
+      properties:
+        cityName:
+          type: string
+        country:
+          type: string
+          nullable: true
+        temperature:
+          type: number
+          nullable: true
+        humidity:
+          type: number
+          nullable: true
+        windSpeed:
+          type: number
+          nullable: true
+        weatherCode:
+          type: number
+          nullable: true
+        weatherLabel:
+          type: string
+        observedAt:
+          type: string
+          nullable: true
+      required: [cityName, weatherLabel]
+
+    WeatherResponse:
+      type: object
+      properties:
+        weather:
+          $ref: "#/components/schemas/WeatherData"
+          nullable: true
+      required: [weather]
+
+    Holiday:
+      type: object
+      properties:
+        date:
+          type: string
+        localName:
+          type: string
+          nullable: true
+        name:
+          type: string
+        types:
+          type: array
+          items:
+            type: string
+      required: [date, name]
+
+    HolidaysResponse:
+      type: object
+      properties:
+        holidays:
+          type: array
+          items:
+            $ref: "#/components/schemas/Holiday"
+      required: [holidays]
+
+    BootstrapPayload:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserInfo"
+        memos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Memo"
+        cities:
+          type: array
+          items:
+            $ref: "#/components/schemas/City"
+        weather:
+          $ref: "#/components/schemas/WeatherData"
+          nullable: true
+        holidays:
+          type: array
+          items:
+            $ref: "#/components/schemas/Holiday"
+        serverTime:
+          type: string
+      required: [user, memos, cities, holidays, serverTime]

@@ -1,252 +1,578 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Link } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, Copy, Check, Info, Settings, Code, FileText, ChevronRight } from "lucide-react";
-import { parsePrintf, formatPrintf, PrintfToken } from "@/lib/printf";
-
+import React, { useState, useEffect } from "react";
+import { 
+  useGetMe, 
+  useLogin, 
+  useRegister, 
+  useLogout, 
+  useGetBootstrap, 
+  useCreateMemo,
+  useUpdateMemo,
+  useDeleteMemo,
+  useAckReminder,
+  useSearchCities,
+  useAddCity,
+  useSetDefaultCity,
+  useDeleteCity,
+  getGetBootstrapQueryKey
+} from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
-
-const DEFAULT_FORMAT = "Hello %s, process %d finished in %.2fms. Flags: %b";
-const DEFAULT_ARGS = ["Admin", "1337", "42.05", "101"];
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { LogOut, Trash2, CheckCircle2, Clock, MapPin, Calendar, Cloud, CloudRain, Wind, Search } from "lucide-react";
 
 export default function Home() {
-  const [formatString, setFormatString] = useState(DEFAULT_FORMAT);
-  const [args, setArgs] = useState<string[]>(DEFAULT_ARGS);
-  const [copied, setCopied] = useState(false);
+  const { data: user, isLoading: isUserLoading } = useGetMe({
+    query: {
+      retry: false
+    }
+  });
+
+  if (isUserLoading) {
+    return <div className="min-h-screen flex items-center justify-center">加载中...</div>;
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return <DashboardScreen user={user.user} />;
+}
+
+function AuthScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const tokens = useMemo(() => parsePrintf(formatString), [formatString]);
-  
-  const specifierTokens = useMemo(() => tokens.filter(t => t.type === 'specifier' && t.specifier !== '%'), [tokens]);
-  
-  // Auto-pad args array if new specifiers are added
-  useEffect(() => {
-    if (specifierTokens.length > args.length) {
-      setArgs(prev => {
-        const next = [...prev];
-        while (next.length < specifierTokens.length) {
-          next.push("");
-        }
-        return next;
-      });
+  const loginMut = useLogin({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries();
+        toast({ title: "登录成功" });
+      },
+      onError: (err) => {
+        toast({ title: "登录失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" });
+      }
     }
-  }, [specifierTokens.length, args.length]);
+  });
 
-  const renderedOutput = useMemo(() => {
-    try {
-      return formatPrintf(tokens, args);
-    } catch (e) {
-      return `Error formatting: ${e}`;
+  const registerMut = useRegister({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries();
+        toast({ title: "注册成功" });
+      },
+      onError: (err) => {
+        toast({ title: "注册失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" });
+      }
     }
-  }, [tokens, args]);
+  });
 
-  const handleArgChange = (index: number, value: string) => {
-    setArgs(prev => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    loginMut.mutate({ data: { email, password } });
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(renderedOutput);
-    setCopied(true);
-    toast({
-      title: "Copied to clipboard",
-      description: "Rendered output has been copied.",
-    });
-    setTimeout(() => setCopied(false), 2000);
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    registerMut.mutate({ data: { email, password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } });
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-background text-foreground font-sans selection:bg-primary/30">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2 rounded border border-primary/20">
-            <Terminal className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-primary">printf<span className="text-foreground opacity-50">_formatter</span></h1>
-            <p className="text-xs text-muted-foreground font-mono">live evaluation environment</p>
-          </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4">个人仪表盘</h1>
+          <p className="text-lg text-slate-600 mb-8">一个简洁、可靠的中文个人数字助理，整合日程、天气和节假日信息，让数据呼吸。</p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" className="font-mono text-xs hidden sm:flex border-border bg-card">
-            v1.0.0
+        
+        <Card className="w-full shadow-lg border-0">
+          <Tabs defaultValue="login">
+            <TabsList className="grid w-full grid-cols-2 rounded-t-lg rounded-b-none h-14">
+              <TabsTrigger value="login" className="text-base">登录</TabsTrigger>
+              <TabsTrigger value="register" className="text-base">注册</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login" className="p-6 m-0">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">邮箱</Label>
+                  <Input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">密码</Label>
+                  <Input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full" disabled={loginMut.isPending}>
+                  {loginMut.isPending ? "登录中..." : "登录"}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="register" className="p-6 m-0">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reg-email">邮箱</Label>
+                  <Input id="reg-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="reg-password">密码</Label>
+                  <Input id="reg-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                </div>
+                <Button type="submit" className="w-full" disabled={registerMut.isPending}>
+                  {registerMut.isPending ? "注册中..." : "注册并登录"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function DashboardScreen({ user }: { user: any }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const logoutMut = useLogout({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries();
+        toast({ title: "已退出登录" });
+      }
+    }
+  });
+
+  const { data: bootstrap, isLoading } = useGetBootstrap();
+
+  if (isLoading || !bootstrap) {
+    return <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center"><div className="animate-pulse">加载仪表盘...</div></div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+      <header className="bg-white border-b sticky top-0 z-10 px-6 h-16 flex items-center justify-between shadow-sm">
+        <h1 className="font-semibold text-lg flex items-center gap-2">
+          <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+            {user.email.charAt(0).toUpperCase()}
+          </span>
+          个人仪表盘
+        </h1>
+        <div className="flex items-center gap-4 text-sm text-slate-600">
+          <span>{user.email}</span>
+          <Button variant="ghost" size="sm" onClick={() => logoutMut.mutate()} className="text-slate-500 hover:text-slate-900">
+            <LogOut className="w-4 h-4 mr-2" /> 退出
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Left Column: Input & Args */}
-        <div className="flex-1 flex flex-col border-r border-border overflow-y-auto">
-          <div className="p-6 space-y-8 max-w-4xl w-full mx-auto">
-            
-            {/* Format String Input */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                  <Code className="w-4 h-4 text-primary" />
-                  Format String
-                </label>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-muted-foreground font-mono">&gt;</span>
-                </div>
-                <Input 
-                  value={formatString}
-                  onChange={(e) => setFormatString(e.target.value)}
-                  className="font-mono text-base pl-8 py-6 bg-card border-border focus-visible:ring-primary focus-visible:border-primary transition-all duration-200 rounded-none border-b-2 focus-visible:border-b-primary shadow-sm"
-                  placeholder="Enter format string (e.g. Hello %s)"
-                  spellCheck={false}
-                />
-              </div>
-            </section>
-
-            {/* Arguments */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold flex items-center gap-2 text-foreground">
-                  <Settings className="w-4 h-4 text-primary" />
-                  Arguments
-                  <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full border border-primary/20">
-                    {specifierTokens.length} detected
-                  </span>
-                </label>
-              </div>
-
-              <div className="bg-card border border-border p-4 rounded-sm min-h-[200px]">
-                {specifierTokens.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-3 opacity-50 py-8">
-                    <Info className="w-8 h-8" />
-                    <p className="text-sm font-mono">No specifiers found in format string</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <AnimatePresence mode="popLayout">
-                      {specifierTokens.map((token, idx) => (
-                        <motion.div
-                          key={`arg-${idx}`}
-                          initial={{ opacity: 0, height: 0, y: -10 }}
-                          animate={{ opacity: 1, height: "auto", y: 0 }}
-                          exit={{ opacity: 0, height: 0, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex items-stretch gap-3 group"
-                        >
-                          <div className="flex flex-col items-center justify-center w-12 bg-muted border border-border rounded-sm">
-                            <span className="text-xs font-mono text-muted-foreground">arg{idx}</span>
-                            <span className="font-mono font-bold text-primary">{token.match}</span>
-                          </div>
-                          <Input
-                            value={args[idx] ?? ""}
-                            onChange={(e) => handleArgChange(idx, e.target.value)}
-                            className="font-mono bg-background border-border flex-1 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary rounded-sm"
-                            placeholder={`Value for ${token.match}`}
-                            spellCheck={false}
-                          />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )}
-              </div>
-            </section>
-
-          </div>
-        </div>
-
-        {/* Right Column: Output & Cheat Sheet */}
-        <div className="w-full md:w-[450px] lg:w-[500px] flex flex-col bg-card/30">
-          
-          {/* Live Output */}
-          <div className="flex-1 flex flex-col border-b border-border">
-            <div className="px-4 py-3 border-b border-border bg-card flex justify-between items-center">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                Live Output
-              </h2>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={copyToClipboard}
-                className="h-8 hover:bg-primary/20 hover:text-primary transition-colors"
-              >
-                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                <span className="font-mono text-xs uppercase tracking-wider">{copied ? 'Copied' : 'Copy'}</span>
-              </Button>
-            </div>
-            
-            <div className="flex-1 p-4 bg-black/40 relative overflow-hidden group">
-              {/* Scanlines / CRT effect subtle overlay */}
-              <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-10"></div>
-              
-              <pre className="font-mono text-[15px] leading-relaxed whitespace-pre-wrap break-all text-foreground h-full overflow-y-auto">
-                {renderedOutput || <span className="opacity-30 italic">{"<empty output>"}</span>}
-              </pre>
-            </div>
+      <main className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12">
+            <ClockPanel />
           </div>
 
-          {/* Cheat Sheet */}
-          <div className="flex-1 overflow-y-auto bg-card p-4">
-            <h3 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-4 flex items-center gap-2">
-              <Info className="w-3 h-3" />
-              Specifier Reference
-            </h3>
-            
-            <div className="space-y-4">
-              <ReferenceSection title="Basic Types" items={[
-                { s: "%s", desc: "String" },
-                { s: "%d / %i", desc: "Integer (base 10)" },
-                { s: "%f", desc: "Float" },
-                { s: "%c", desc: "Character" },
-                { s: "%%", desc: "Literal %" },
-              ]} />
-              
-              <ReferenceSection title="Advanced Numbers" items={[
-                { s: "%x / %X", desc: "Hexadecimal (lower/upper)" },
-                { s: "%o", desc: "Octal" },
-                { s: "%b", desc: "Binary" },
-                { s: "%e / %E", desc: "Scientific notation" },
-                { s: "%g / %G", desc: "Shortest float rep." },
-                { s: "%u", desc: "Unsigned integer" },
-              ]} />
-
-              <ReferenceSection title="Modifiers" items={[
-                { s: "%10s", desc: "Pad left to 10 chars" },
-                { s: "%-10s", desc: "Pad right to 10 chars" },
-                { s: "%05d", desc: "Zero-pad to 5 chars" },
-                { s: "%.2f", desc: "2 decimal places" },
-                { s: "%+d", desc: "Always show sign" },
-                { s: "% #x", desc: "Alternate form (e.g. 0x)" },
-              ]} />
-            </div>
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+            <ReminderPanel memos={bootstrap.memos} />
+            <WeatherPanel cities={bootstrap.cities} weather={bootstrap.weather} />
           </div>
 
+          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+            <MemoPanel memos={bootstrap.memos} />
+            <HolidayPanel holidays={bootstrap.holidays} />
+          </div>
         </div>
       </main>
     </div>
   );
 }
 
-function ReferenceSection({ title, items }: { title: string, items: { s: string, desc: string }[] }) {
+function ClockPanel() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeString = time.toLocaleTimeString('zh-CN', { hour12: false });
+  const dateString = time.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
   return (
-    <div className="space-y-2">
-      <h4 className="text-sm font-semibold text-primary/80">{title}</h4>
-      <div className="grid grid-cols-1 gap-1">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center justify-between text-sm group">
-            <code className="text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded text-xs transition-colors group-hover:bg-primary/20">{item.s}</code>
-            <span className="text-muted-foreground text-xs">{item.desc}</span>
+    <Card className="border-0 shadow-sm bg-gradient-to-br from-primary to-blue-600 text-white">
+      <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between">
+        <div>
+          <div className="text-6xl font-bold tracking-tighter mb-2 font-mono tabular-nums">{timeString}</div>
+          <div className="text-xl text-blue-100">{dateString}</div>
+        </div>
+        <div className="mt-6 md:mt-0 text-right">
+          <div className="text-blue-100 text-lg">新的一天，保持专注</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReminderPanel({ memos }: { memos: any[] }) {
+  const [now, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 10000); // 10s tick for reminders is fine
+    return () => clearInterval(timer);
+  }, []);
+
+  const queryClient = useQueryClient();
+  const ackMut = useAckReminder({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() })
+    }
+  });
+
+  const activeReminders = memos.filter(m => 
+    m.remindAt && !m.reminderAcknowledgedAt && new Date(m.remindAt) <= now
+  );
+
+  return (
+    <Card className="border-0 shadow-sm h-full flex flex-col">
+      <CardHeader className="pb-3 border-b border-slate-100">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Clock className="w-5 h-5 text-primary" /> 
+          到点提醒 
+          {activeReminders.length > 0 && (
+            <span className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded-full ml-auto">
+              {activeReminders.length}
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 p-0">
+        <ScrollArea className="h-[250px]">
+          {activeReminders.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-sm">
+              当前没有活动的提醒
+            </div>
+          ) : (
+            <div className="divide-y border-slate-100">
+              {activeReminders.map(m => (
+                <div key={m.id} className="p-4 bg-orange-50/50 hover:bg-orange-50 transition-colors">
+                  <h4 className="font-medium text-slate-900 mb-1">{m.title}</h4>
+                  <div className="text-sm text-slate-500 mb-3">{new Date(m.remindAt).toLocaleString('zh-CN')}</div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="w-full border-orange-200 text-orange-700 hover:bg-orange-100"
+                    onClick={() => ackMut.mutate({ id: m.id })}
+                    disabled={ackMut.isPending}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> 我知道了
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MemoPanel({ memos }: { memos: any[] }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [remindAt, setRemindAt] = useState("");
+  const [imageDataUrl, setImageDataUrl] = useState("");
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const createMut = useCreateMemo({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
+        resetForm();
+        toast({ title: "备忘录已保存" });
+      }
+    }
+  });
+
+  const updateMut = useUpdateMemo({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
+        resetForm();
+        toast({ title: "备忘录已更新" });
+      }
+    }
+  });
+
+  const deleteMut = useDeleteMemo({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
+        toast({ title: "备忘录已删除" });
+      }
+    }
+  });
+
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle("");
+    setContent("");
+    setRemindAt("");
+    setImageDataUrl("");
+  };
+
+  const handleEdit = (memo: any) => {
+    setEditingId(memo.id);
+    setTitle(memo.title);
+    setContent(memo.content || "");
+    setRemindAt(memo.remindAt ? memo.remindAt.slice(0, 16) : ""); // datetime-local format
+    setImageDataUrl(memo.imageDataUrl || "");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImageDataUrl(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      title,
+      content: content || null,
+      remindAt: remindAt ? new Date(remindAt).toISOString() : null,
+      imageDataUrl: imageDataUrl || null
+    };
+
+    if (editingId) {
+      updateMut.mutate({ id: editingId, data: payload });
+    } else {
+      createMut.mutate({ data: payload });
+    }
+  };
+
+  return (
+    <Card className="border-0 shadow-sm flex flex-col h-full">
+      <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+        <CardTitle className="text-lg">备忘录</CardTitle>
+        {editingId && (
+          <Button variant="ghost" size="sm" onClick={resetForm}>取消编辑</Button>
+        )}
+      </CardHeader>
+      <CardContent className="p-0 flex-1 grid md:grid-cols-2">
+        <div className="p-4 border-r border-slate-100 flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <Input placeholder="标题..." value={title} onChange={e => setTitle(e.target.value)} required className="bg-slate-50 border-0" />
+            </div>
+            <div>
+              <Textarea placeholder="内容..." value={content} onChange={e => setContent(e.target.value)} className="min-h-[100px] resize-none bg-slate-50 border-0" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs text-slate-500 mb-1 block">提醒时间</Label>
+                <Input type="datetime-local" value={remindAt} onChange={e => setRemindAt(e.target.value)} className="bg-slate-50 border-0 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500 mb-1 block">图片附件</Label>
+                <Input type="file" accept="image/*" onChange={handleFileChange} className="bg-slate-50 border-0 text-sm file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-primary/10 file:text-primary" />
+              </div>
+            </div>
+            {imageDataUrl && (
+              <div className="relative rounded-md overflow-hidden bg-slate-100 h-24 w-24">
+                <img src={imageDataUrl} alt="preview" className="object-cover w-full h-full" />
+                <button type="button" onClick={() => setImageDataUrl("")} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black">
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>
+              {editingId ? "更新备忘录" : "添加备忘录"}
+            </Button>
+          </form>
+        </div>
+        <div className="bg-slate-50/50">
+          <ScrollArea className="h-[350px]">
+            {memos.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">还没有备忘录，右侧创建一个吧。</div>
+            ) : (
+              <div className="divide-y border-slate-100">
+                {memos.map(m => (
+                  <div key={m.id} className="p-4 hover:bg-white transition-colors group cursor-pointer" onClick={() => handleEdit(m)}>
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-medium text-slate-900">{m.title}</h4>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-destructive" onClick={(e) => { e.stopPropagation(); deleteMut.mutate({ id: m.id }); }}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {m.content && <p className="text-sm text-slate-600 line-clamp-2 mb-2">{m.content}</p>}
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      {m.remindAt && <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-sm"><Clock className="w-3 h-3"/> {new Date(m.remindAt).toLocaleString('zh-CN')}</span>}
+                      {m.imageDataUrl && <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-sm text-slate-600">附图片</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WeatherPanel({ cities, weather }: { cities: any[], weather: any }) {
+  const [query, setQuery] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const searchMut = useSearchCities();
+  const addCityMut = useAddCity({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
+        setQuery("");
+        searchMut.reset();
+        toast({ title: "城市已添加" });
+      }
+    }
+  });
+  const deleteCityMut = useDeleteCity({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() })
+    }
+  });
+  const setDefaultMut = useSetDefaultCity({
+    mutation: {
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() })
+    }
+  });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      searchMut.mutate({ data: { query } });
+    }
+  };
+
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-3 border-b border-slate-100">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Cloud className="w-5 h-5 text-primary" /> 
+          天气与城市
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 space-y-6">
+        
+        {weather && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl flex items-center justify-between border border-blue-100/50">
+            <div>
+              <h3 className="font-semibold text-slate-900 text-lg flex items-center gap-1">
+                <MapPin className="w-4 h-4 text-blue-500" /> {weather.cityName}
+              </h3>
+              <div className="text-sm text-slate-500 mt-1">{weather.weatherLabel}</div>
+              <div className="flex items-center gap-3 mt-3 text-xs text-slate-600">
+                <span className="flex items-center gap-1" title="湿度"><CloudRain className="w-3 h-3" /> {weather.humidity}%</span>
+                <span className="flex items-center gap-1" title="风速"><Wind className="w-3 h-3" /> {weather.windSpeed}km/h</span>
+              </div>
+            </div>
+            <div className="text-4xl font-light text-slate-800 tabular-nums">
+              {weather.temperature}°<span className="text-xl text-slate-400">C</span>
+            </div>
           </div>
-        ))}
-      </div>
-    </div>
+        )}
+
+        <div className="space-y-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Input placeholder="搜索城市..." value={query} onChange={e => setQuery(e.target.value)} className="bg-slate-50 border-0" />
+            <Button type="submit" variant="secondary" disabled={searchMut.isPending}><Search className="w-4 h-4" /></Button>
+          </form>
+
+          {searchMut.data && searchMut.data.results && (
+            <div className="bg-white border rounded-lg overflow-hidden shadow-sm divide-y">
+              {searchMut.data.results.map((r, i) => (
+                <div key={i} className="p-2 px-3 flex items-center justify-between text-sm">
+                  <span>{r.name} <span className="text-slate-400 text-xs ml-1">{r.admin1} {r.country}</span></span>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs text-primary" onClick={() => addCityMut.mutate({ data: { ...r } })}>添加</Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">已保存城市</h4>
+            {cities.length === 0 ? (
+              <div className="text-sm text-slate-400">暂无保存的城市</div>
+            ) : (
+              <div className="space-y-1">
+                {cities.map(c => (
+                  <div key={c.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-slate-50 group">
+                    <span className="flex items-center gap-2">
+                      {c.name} {c.isDefault && <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded">默认</span>}
+                    </span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {!c.isDefault && (
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setDefaultMut.mutate({ id: c.id })}>设为默认</Button>
+                      )}
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => deleteCityMut.mutate({ id: c.id })}><Trash2 className="w-3 h-3" /></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HolidayPanel({ holidays }: { holidays: any[] }) {
+  return (
+    <Card className="border-0 shadow-sm h-full">
+      <CardHeader className="pb-3 border-b border-slate-100">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" /> 
+          未来节假日 (90天)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[300px]">
+          {holidays.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-sm">近期没有节假日</div>
+          ) : (
+            <div className="divide-y border-slate-100">
+              {holidays.map((h, i) => (
+                <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div>
+                    <div className="font-medium text-slate-900 mb-0.5">{h.localName || h.name}</div>
+                    {h.localName && h.name !== h.localName && <div className="text-xs text-slate-400">{h.name}</div>}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-primary bg-primary/5 px-2 py-1 rounded-md">{h.date}</div>
+                    {h.types && h.types.length > 0 && (
+                      <div className="text-xs text-slate-500 mt-1">{h.types.join(", ")}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

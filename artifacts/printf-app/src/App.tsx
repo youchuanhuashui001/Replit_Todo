@@ -17,11 +17,6 @@ function Router() {
 }
 
 function App() {
-  // Check system dark mode preference or default to dark since we want a terminal vibe
-  if (typeof document !== 'undefined') {
-    document.documentElement.classList.add('dark');
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -35,4 +30,3 @@ function App() {
 }
 
 export default App;
-
