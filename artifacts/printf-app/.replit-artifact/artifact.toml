@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "printf formatter"
+version = "1.0.0"
+id = "artifacts/printf-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24889
+
+[services.development]
+run = "pnpm --filter @workspace/printf-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/printf-app", "run", "build" ]
+publicDir = "artifacts/printf-app/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24889"
+BASE_PATH = "/"
