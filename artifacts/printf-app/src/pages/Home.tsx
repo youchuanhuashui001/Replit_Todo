@@ -167,11 +167,11 @@ function DashboardScreen({ user }: { user: any }) {
         <ClockPanel weather={bootstrap.weather} />
 
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-[420px]">
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
             <ReminderPanel memos={bootstrap.memos} />
             <CityManagerPanel cities={bootstrap.cities} />
           </div>
-          <div className="col-span-12 lg:col-span-9">
+          <div className="col-span-12 lg:col-span-9 h-[560px]">
             <MemoPanel memos={bootstrap.memos} />
           </div>
         </div>
@@ -234,7 +234,7 @@ function ReminderPanel({ memos }: { memos: any[] }) {
   const active = memos.filter((m) => m.remindAt && !m.reminderAcknowledgedAt && new Date(m.remindAt) <= now);
 
   return (
-    <Card className="border-0 shadow-sm flex flex-col grow min-h-0">
+    <Card className="border-0 shadow-sm flex flex-col flex-1 min-h-0">
       <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
           <Clock className="w-4 h-4 text-primary" />
@@ -282,7 +282,7 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
   const setDefaultMut = useSetDefaultCity({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) } });
 
   return (
-    <Card className="border-0 shadow-sm flex flex-col grow min-h-0">
+    <Card className="border-0 shadow-sm flex flex-col flex-1 min-h-0">
       <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
           <Cloud className="w-4 h-4 text-primary" /> 城市管理
@@ -337,9 +337,11 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
 type MemoFormData = { title: string; content: string; remindAt: string; imageDataUrl: string };
 
 function MemoPanel({ memos }: { memos: any[] }) {
+  const [activeTab, setActiveTab] = useState<"pending" | "completed">("pending");
   const [addOpen, setAddOpen] = useState(false);
   const [editMemo, setEditMemo] = useState<any | null>(null);
   const [viewMemo, setViewMemo] = useState<any | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [form, setForm] = useState<MemoFormData>({ title: "", content: "", remindAt: "", imageDataUrl: "" });
 
   const { toast } = useToast();
@@ -494,7 +496,7 @@ function MemoPanel({ memos }: { memos: any[] }) {
           </div>
         </ScrollArea>
         <DialogFooter className="flex-row justify-between pt-2 border-t border-slate-100 mt-2">
-          <Button variant="destructive" size="sm" onClick={() => viewMemo && deleteMut.mutate({ id: viewMemo.id })} disabled={deleteMut.isPending}>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)} disabled={deleteMut.isPending}>
             <Trash2 className="w-3.5 h-3.5 mr-1" /> 删除
           </Button>
           <div className="flex gap-2">
@@ -508,37 +510,104 @@ function MemoPanel({ memos }: { memos: any[] }) {
     </Dialog>
   );
 
+  const DeleteConfirmDialog = (
+    <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>确认删除</DialogTitle>
+          <DialogDescription>
+            {viewMemo?.completedAt ? (
+              <div className="space-y-2 mt-2">
+                <p className="text-red-600 font-medium">⚠️ 这是一个已完成的任务</p>
+                <p>删除后将无法恢复。确定要删除吗？</p>
+              </div>
+            ) : (
+              <p>确定要删除这条备忘录吗？</p>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>取消</Button>
+          <Button variant="destructive" onClick={() => {
+            if (viewMemo) {
+              deleteMut.mutate({ id: viewMemo.id });
+              setDeleteConfirmOpen(false);
+            }
+          }} disabled={deleteMut.isPending}>
+            {deleteMut.isPending ? "删除中…" : "确认删除"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
       <Card className="border-0 shadow-sm h-full flex flex-col">
-        <CardHeader className="border-b border-slate-100 py-3 px-4 flex flex-row items-center justify-between">
+        <CardHeader className="border-b border-slate-100 py-3 px-4 flex flex-row items-center justify-between flex-shrink-0">
           <CardTitle className="text-base font-semibold text-slate-700">备忘录</CardTitle>
           <Button size="sm" onClick={openAdd} className="h-8 gap-1.5">
             <Plus className="w-4 h-4" /> 添加备忘录
           </Button>
         </CardHeader>
-        <CardContent className="p-0 flex-1">
-          <ScrollArea className="h-[420px]">
-            {memos.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-16 text-slate-400 gap-3">
-                <p className="text-sm">暂无备忘录</p>
-                <Button size="sm" variant="outline" onClick={openAdd} className="gap-1.5">
-                  <Plus className="w-3.5 h-3.5" /> 创建第一条
-                </Button>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:p-4 sm:gap-3">
-                {memos.map((m) => (
-                  <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} onToggleComplete={handleToggleComplete} />
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </CardContent>
-      </Card>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "pending" | "completed")} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="px-4 py-3 w-full border-b border-slate-100 rounded-none bg-transparent">
+            <TabsTrigger value="pending" className="text-sm">
+              未完成
+              <span className="ml-1.5 text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                {memos.filter((m) => !m.completedAt).length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="text-sm">
+              已完成
+              <span className="ml-1.5 text-xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                {memos.filter((m) => m.completedAt).length}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending" className="flex-1 min-h-0 p-0 m-0">
+            <CardContent className="p-0 flex-1 h-full">
+              <ScrollArea className="h-full">
+                {memos.filter((m) => !m.completedAt).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-16 text-slate-400 gap-3">
+                    <p className="text-sm">暂无未完成的备忘录</p>
+                    <Button size="sm" variant="outline" onClick={openAdd} className="gap-1.5">
+                      <Plus className="w-3.5 h-3.5" /> 创建第一条
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:p-4 sm:gap-3">
+                    {memos.filter((m) => !m.completedAt).map((m) => (
+                      <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} onToggleComplete={handleToggleComplete} />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </TabsContent>
+          <TabsContent value="completed" className="flex-1 min-h-0 p-0 m-0">
+            <CardContent className="p-0 flex-1 h-full">
+              <ScrollArea className="h-full">
+                {memos.filter((m) => m.completedAt).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-16 text-slate-400 gap-3">
+                    <p className="text-sm">暂无已完成的备忘录</p>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:p-4 sm:gap-3">
+                    {memos.filter((m) => m.completedAt).map((m) => (
+                      <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} onToggleComplete={handleToggleComplete} />
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </TabsContent>
+        </Tabs>
 
-      {MemoFormDialog}
-      {MemoViewDialog}
+        {MemoFormDialog}
+        {MemoViewDialog}
+        {DeleteConfirmDialog}
+      </Card>
     </>
   );
 }
@@ -547,7 +616,7 @@ function MemoCard({ memo, onClick, onToggleComplete }: { memo: any; onClick: () 
   const isCompleted = !!memo.completedAt;
   return (
     <div
-      className={`group relative cursor-pointer rounded-xl border bg-white transition-all p-4 ${
+      className={`group relative cursor-pointer rounded-xl border bg-white transition-all p-4 flex flex-col ${
         isCompleted
           ? "border-slate-200 bg-slate-50 opacity-60"
           : "border-slate-100 hover:border-primary/30 hover:shadow-sm"
@@ -578,7 +647,7 @@ function MemoCard({ memo, onClick, onToggleComplete }: { memo: any; onClick: () 
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{memo.content}</ReactMarkdown>
         </div>
       )}
-      <div className="flex items-center gap-1.5 flex-wrap mt-auto">
+      <div className="flex items-center gap-1.5 flex-wrap mt-auto mb-2">
         {memo.remindAt && (
           <span className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
             <Clock className="w-2.5 h-2.5" />{new Date(memo.remindAt).toLocaleDateString("zh-CN")}
@@ -590,8 +659,8 @@ function MemoCard({ memo, onClick, onToggleComplete }: { memo: any; onClick: () 
           </span>
         )}
       </div>
-      <div className="absolute top-3 right-3 text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-        点击查看
+      <div className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        点击查看详情
       </div>
     </div>
   );
