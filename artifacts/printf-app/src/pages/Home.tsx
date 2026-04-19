@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { 
-  useGetMe, 
-  useLogin, 
-  useRegister, 
-  useLogout, 
-  useGetBootstrap, 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  useGetMe,
+  useLogin,
+  useRegister,
+  useLogout,
+  useGetBootstrap,
   useCreateMemo,
   useUpdateMemo,
   useDeleteMemo,
@@ -13,7 +15,7 @@ import {
   useAddCity,
   useSetDefaultCity,
   useDeleteCity,
-  getGetBootstrapQueryKey
+  getGetBootstrapQueryKey,
 } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,17 +26,37 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { LogOut, Trash2, CheckCircle2, Clock, MapPin, Calendar as CalendarIcon, Cloud, CloudRain, Wind, Search, Pencil, X } from "lucide-react";
+import {
+  LogOut,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  Calendar as CalendarIcon,
+  Cloud,
+  CloudRain,
+  Wind,
+  Search,
+  Pencil,
+  Plus,
+  X,
+  Image as ImageIcon,
+} from "lucide-react";
 
 export default function Home() {
   const { data: user, isLoading: isUserLoading } = useGetMe({ query: { retry: false } });
-
   if (isUserLoading) {
-    return <div className="min-h-screen flex items-center justify-center">加载中...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-slate-500">加载中…</div>;
   }
-
   if (!user) return <AuthScreen />;
   return <DashboardScreen user={user.user} />;
 }
@@ -48,15 +70,14 @@ function AuthScreen() {
   const loginMut = useLogin({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries(); toast({ title: "登录成功" }); },
-      onError: (err) => { toast({ title: "登录失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" }); }
-    }
+      onError: (err) => { toast({ title: "登录失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" }); },
+    },
   });
-
   const registerMut = useRegister({
     mutation: {
       onSuccess: () => { queryClient.invalidateQueries(); toast({ title: "注册成功" }); },
-      onError: (err) => { toast({ title: "注册失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" }); }
-    }
+      onError: (err) => { toast({ title: "注册失败", description: (err as any).data?.error ?? "请稍后重试", variant: "destructive" }); },
+    },
   });
 
   return (
@@ -64,7 +85,7 @@ function AuthScreen() {
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-4">个人仪表盘</h1>
-          <p className="text-lg text-slate-600 mb-8">一个简洁、可靠的中文个人数字助理，整合日程、天气和节假日信息，让数据呼吸。</p>
+          <p className="text-lg text-slate-600">一个简洁、可靠的中文个人数字助理，整合备忘录、天气和节假日信息。</p>
         </div>
         <Card className="w-full shadow-lg border-0">
           <Tabs defaultValue="login">
@@ -76,14 +97,14 @@ function AuthScreen() {
               <form onSubmit={(e) => { e.preventDefault(); loginMut.mutate({ data: { email, password } }); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">邮箱</Label>
-                  <Input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">密码</Label>
-                  <Input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={loginMut.isPending}>
-                  {loginMut.isPending ? "登录中..." : "登录"}
+                  {loginMut.isPending ? "登录中…" : "登录"}
                 </Button>
               </form>
             </TabsContent>
@@ -91,14 +112,14 @@ function AuthScreen() {
               <form onSubmit={(e) => { e.preventDefault(); registerMut.mutate({ data: { email, password, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } }); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="reg-email">邮箱</Label>
-                  <Input id="reg-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                  <Input id="reg-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="reg-password">密码</Label>
-                  <Input id="reg-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                  <Input id="reg-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={registerMut.isPending}>
-                  {registerMut.isPending ? "注册中..." : "注册并登录"}
+                  {registerMut.isPending ? "注册中…" : "注册并登录"}
                 </Button>
               </form>
             </TabsContent>
@@ -110,53 +131,52 @@ function AuthScreen() {
 }
 
 function DashboardScreen({ user }: { user: any }) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const logoutMut = useLogout({
-    mutation: {
-      onSuccess: () => { queryClient.invalidateQueries(); toast({ title: "已退出登录" }); }
-    }
+    mutation: { onSuccess: () => { queryClient.invalidateQueries(); toast({ title: "已退出登录" }); } },
   });
-
   const { data: bootstrap, isLoading } = useGetBootstrap();
 
   if (isLoading || !bootstrap) {
-    return <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center"><div className="animate-pulse">加载仪表盘...</div></div>;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">
+        加载仪表盘…
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      <header className="bg-white border-b sticky top-0 z-10 px-6 h-16 flex items-center justify-between shadow-sm">
-        <h1 className="font-semibold text-lg flex items-center gap-2">
-          <span className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="bg-white border-b sticky top-0 z-10 px-6 h-14 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-2 font-semibold text-base">
+          <span className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
             {user.email.charAt(0).toUpperCase()}
           </span>
           个人仪表盘
-        </h1>
-        <div className="flex items-center gap-4 text-sm text-slate-600">
-          <span>{user.email}</span>
+        </div>
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <span className="hidden sm:block">{user.email}</span>
           <Button variant="ghost" size="sm" onClick={() => logoutMut.mutate()} className="text-slate-500 hover:text-slate-900">
-            <LogOut className="w-4 h-4 mr-2" /> 退出
+            <LogOut className="w-4 h-4 mr-1.5" /> 退出
           </Button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12">
-            <ClockPanel weather={bootstrap.weather} />
-          </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <ClockPanel weather={bootstrap.weather} />
 
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
             <ReminderPanel memos={bootstrap.memos} />
             <CityManagerPanel cities={bootstrap.cities} />
           </div>
-
-          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
+          <div className="col-span-12 lg:col-span-9">
             <MemoPanel memos={bootstrap.memos} />
-            <CalendarHolidayPanel holidays={bootstrap.holidays} />
           </div>
         </div>
+
+        <CalendarHolidayPanel holidays={bootstrap.holidays} />
       </main>
     </div>
   );
@@ -164,39 +184,32 @@ function DashboardScreen({ user }: { user: any }) {
 
 function ClockPanel({ weather }: { weather: any }) {
   const [time, setTime] = useState(new Date());
-
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  const timeString = time.toLocaleTimeString('zh-CN', { hour12: false });
-  const dateString = time.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = time.toLocaleTimeString("zh-CN", { hour12: false });
+  const dateStr = time.toLocaleDateString("zh-CN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   return (
     <Card className="border-0 shadow-sm bg-gradient-to-br from-primary to-blue-600 text-white">
-      <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <CardContent className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="text-6xl font-bold tracking-tighter mb-2 font-mono tabular-nums">{timeString}</div>
-          <div className="text-xl text-blue-100">{dateString}</div>
+          <div className="text-5xl font-bold tracking-tighter font-mono tabular-nums mb-1">{timeStr}</div>
+          <div className="text-blue-100 text-base">{dateStr}</div>
         </div>
         {weather ? (
-          <div className="mt-4 md:mt-0 bg-white/15 rounded-2xl px-6 py-4 flex items-center gap-6 backdrop-blur-sm border border-white/20">
+          <div className="bg-white/15 rounded-xl px-5 py-3 flex items-center gap-5 border border-white/20 shrink-0">
             <div className="text-center">
-              <div className="text-4xl font-light tabular-nums">{weather.temperature}°<span className="text-2xl text-blue-100">C</span></div>
-              <div className="text-blue-100 text-sm mt-1">{weather.weatherLabel}</div>
+              <div className="text-3xl font-light tabular-nums">{weather.temperature}°C</div>
+              <div className="text-blue-100 text-xs mt-0.5">{weather.weatherLabel}</div>
             </div>
-            <div className="h-12 w-px bg-white/25" />
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 text-sm text-blue-100">
-                <MapPin className="w-3.5 h-3.5" /> {weather.cityName}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-blue-100">
-                <CloudRain className="w-3.5 h-3.5" /> 湿度 {weather.humidity}%
-              </div>
-              <div className="flex items-center gap-2 text-sm text-blue-100">
-                <Wind className="w-3.5 h-3.5" /> 风速 {weather.windSpeed} km/h
-              </div>
+            <div className="w-px h-10 bg-white/25" />
+            <div className="space-y-1 text-sm text-blue-100">
+              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{weather.cityName}</div>
+              <div className="flex items-center gap-1.5"><CloudRain className="w-3.5 h-3.5" />湿度 {weather.humidity}%</div>
+              <div className="flex items-center gap-1.5"><Wind className="w-3.5 h-3.5" />风速 {weather.windSpeed} km/h</div>
             </div>
           </div>
         ) : (
@@ -208,51 +221,42 @@ function ClockPanel({ weather }: { weather: any }) {
 }
 
 function ReminderPanel({ memos }: { memos: any[] }) {
-  const [now, setTime] = useState(new Date());
+  const [now, setNow] = useState(new Date());
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 10000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setNow(new Date()), 10000);
+    return () => clearInterval(t);
   }, []);
-
   const queryClient = useQueryClient();
   const ackMut = useAckReminder({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) }
+    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) },
   });
 
-  const activeReminders = memos.filter(m =>
-    m.remindAt && !m.reminderAcknowledgedAt && new Date(m.remindAt) <= now
-  );
+  const active = memos.filter((m) => m.remindAt && !m.reminderAcknowledgedAt && new Date(m.remindAt) <= now);
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-3 border-b border-slate-100">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" />
+      <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
+          <Clock className="w-4 h-4 text-primary" />
           到点提醒
-          {activeReminders.length > 0 && (
-            <span className="bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded-full ml-auto">
-              {activeReminders.length}
-            </span>
+          {active.length > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">{active.length}</span>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[220px]">
-          {activeReminders.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">当前没有活动的提醒</div>
+        <ScrollArea className="max-h-[220px]">
+          {active.length === 0 ? (
+            <p className="text-xs text-slate-400 text-center py-6">暂无到期提醒</p>
           ) : (
-            <div className="divide-y border-slate-100">
-              {activeReminders.map(m => (
-                <div key={m.id} className="p-4 bg-orange-50/50 hover:bg-orange-50 transition-colors">
-                  <h4 className="font-medium text-slate-900 mb-1">{m.title}</h4>
-                  <div className="text-sm text-slate-500 mb-3">{new Date(m.remindAt).toLocaleString('zh-CN')}</div>
-                  <Button
-                    size="sm" variant="outline"
-                    className="w-full border-orange-200 text-orange-700 hover:bg-orange-100"
-                    onClick={() => ackMut.mutate({ id: m.id })}
-                    disabled={ackMut.isPending}
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" /> 我知道了
+            <div className="divide-y divide-slate-100">
+              {active.map((m) => (
+                <div key={m.id} className="p-3 bg-orange-50/60">
+                  <p className="font-medium text-sm text-slate-800 mb-1">{m.title}</p>
+                  <p className="text-xs text-slate-500 mb-2">{new Date(m.remindAt).toLocaleString("zh-CN")}</p>
+                  <Button size="sm" variant="outline" className="w-full h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-100"
+                    onClick={() => ackMut.mutate({ id: m.id })} disabled={ackMut.isPending}>
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 我知道了
                   </Button>
                 </div>
               ))}
@@ -268,65 +272,55 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
   const [query, setQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
   const searchMut = useSearchCities();
   const addCityMut = useAddCity({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
-        setQuery(""); searchMut.reset();
-        toast({ title: "城市已添加" });
-      }
-    }
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }); setQuery(""); searchMut.reset(); toast({ title: "城市已添加" }); },
+    },
   });
-  const deleteCityMut = useDeleteCity({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) }
-  });
-  const setDefaultMut = useSetDefaultCity({
-    mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) }
-  });
+  const deleteCityMut = useDeleteCity({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) } });
+  const setDefaultMut = useSetDefaultCity({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) } });
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-3 border-b border-slate-100">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Cloud className="w-5 h-5 text-primary" /> 城市管理
+      <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
+          <Cloud className="w-4 h-4 text-primary" /> 城市管理
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) searchMut.mutate({ data: { query } }); }} className="flex gap-2">
-          <Input placeholder="搜索城市..." value={query} onChange={e => setQuery(e.target.value)} className="bg-slate-50 border-0" />
-          <Button type="submit" variant="secondary" disabled={searchMut.isPending}><Search className="w-4 h-4" /></Button>
+      <CardContent className="p-3 space-y-3">
+        <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) searchMut.mutate({ data: { query } }); }} className="flex gap-1.5">
+          <Input placeholder="搜索城市…" value={query} onChange={(e) => setQuery(e.target.value)} className="bg-slate-50 border-0 h-8 text-sm" />
+          <Button type="submit" variant="secondary" size="sm" className="h-8 px-2.5" disabled={searchMut.isPending}>
+            <Search className="w-3.5 h-3.5" />
+          </Button>
         </form>
-
         {searchMut.data?.results && searchMut.data.results.length > 0 && (
-          <div className="bg-white border rounded-lg overflow-hidden shadow-sm divide-y">
+          <div className="bg-white border rounded-md overflow-hidden shadow-sm divide-y text-xs">
             {searchMut.data.results.map((r: any, i: number) => (
-              <div key={i} className="p-2 px-3 flex items-center justify-between text-sm">
-                <span>{r.name} <span className="text-slate-400 text-xs ml-1">{r.admin1} {r.country}</span></span>
-                <Button size="sm" variant="ghost" className="h-7 text-xs text-primary" onClick={() => addCityMut.mutate({ data: { ...r } })}>添加</Button>
+              <div key={i} className="px-2.5 py-1.5 flex items-center justify-between">
+                <span className="text-slate-700">{r.name} <span className="text-slate-400">{r.admin1}</span></span>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px] text-primary" onClick={() => addCityMut.mutate({ data: { ...r } })}>添加</Button>
               </div>
             ))}
           </div>
         )}
-
         <div className="space-y-1">
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">已保存城市</h4>
           {cities.length === 0 ? (
-            <div className="text-sm text-slate-400">暂无保存的城市，搜索后添加</div>
+            <p className="text-xs text-slate-400 text-center py-2">暂无城市</p>
           ) : (
             cities.map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-slate-50 group">
-                <span className="flex items-center gap-2">
+              <div key={c.id} className="flex items-center justify-between text-xs p-1.5 rounded hover:bg-slate-50 group">
+                <span className="flex items-center gap-1.5 text-slate-700">
                   {c.name}
-                  {c.isDefault && <span className="bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded">默认</span>}
+                  {c.isDefault && <span className="bg-primary/10 text-primary text-[10px] px-1 py-px rounded leading-none">默认</span>}
                 </span>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
                   {!c.isDefault && (
-                    <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setDefaultMut.mutate({ id: c.id })}>设为默认</Button>
+                    <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => setDefaultMut.mutate({ id: c.id })}>设默认</Button>
                   )}
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => deleteCityMut.mutate({ id: c.id })}>
-                    <Trash2 className="w-3 h-3" />
+                  <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400" onClick={() => deleteCityMut.mutate({ id: c.id })}>
+                    <X className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
@@ -338,228 +332,239 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
   );
 }
 
+type MemoFormData = { title: string; content: string; remindAt: string; imageDataUrl: string };
+
 function MemoPanel({ memos }: { memos: any[] }) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [remindAt, setRemindAt] = useState("");
-  const [imageDataUrl, setImageDataUrl] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [editMemo, setEditMemo] = useState<any | null>(null);
   const [viewMemo, setViewMemo] = useState<any | null>(null);
+  const [form, setForm] = useState<MemoFormData>({ title: "", content: "", remindAt: "", imageDataUrl: "" });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
+
   const createMut = useCreateMemo({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
-        resetForm();
-        toast({ title: "备忘录已保存" });
-      }
-    }
+      onSuccess: () => { invalidate(); setAddOpen(false); resetForm(); toast({ title: "备忘录已保存" }); },
+    },
   });
-
   const updateMut = useUpdateMemo({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
-        resetForm();
-        setViewMemo(null);
-        toast({ title: "备忘录已更新" });
-      }
-    }
+      onSuccess: () => { invalidate(); setEditMemo(null); resetForm(); toast({ title: "备忘录已更新" }); },
+    },
   });
-
   const deleteMut = useDeleteMemo({
     mutation: {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() });
-        setViewMemo(null);
-        toast({ title: "备忘录已删除" });
-      }
-    }
+      onSuccess: () => { invalidate(); setViewMemo(null); setEditMemo(null); toast({ title: "已删除" }); },
+    },
   });
 
-  const resetForm = () => {
-    setEditingId(null);
-    setTitle(""); setContent(""); setRemindAt(""); setImageDataUrl("");
-  };
+  const resetForm = () => setForm({ title: "", content: "", remindAt: "", imageDataUrl: "" });
 
-  const startEdit = (memo: any) => {
-    setEditingId(memo.id);
-    setTitle(memo.title);
-    setContent(memo.content || "");
-    setRemindAt(memo.remindAt ? memo.remindAt.slice(0, 16) : "");
-    setImageDataUrl(memo.imageDataUrl || "");
+  const openAdd = () => { resetForm(); setAddOpen(true); };
+  const openEdit = (m: any) => {
+    setForm({
+      title: m.title,
+      content: m.content || "",
+      remindAt: m.remindAt ? m.remindAt.slice(0, 16) : "",
+      imageDataUrl: m.imageDataUrl || "",
+    });
     setViewMemo(null);
+    setEditMemo(m);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (ev) => setImageDataUrl(ev.target?.result as string);
+      reader.onload = (ev) => setForm((f) => ({ ...f, imageDataUrl: ev.target?.result as string }));
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      title,
-      content: content || null,
-      remindAt: remindAt ? new Date(remindAt).toISOString() : null,
-      imageDataUrl: imageDataUrl || null,
+      title: form.title,
+      content: form.content || null,
+      remindAt: form.remindAt ? new Date(form.remindAt).toISOString() : null,
+      imageDataUrl: form.imageDataUrl || null,
     };
-    if (editingId) {
-      updateMut.mutate({ id: editingId, data: payload });
+    if (editMemo) {
+      updateMut.mutate({ id: editMemo.id, data: payload });
     } else {
       createMut.mutate({ data: payload });
     }
   };
 
-  return (
-    <>
-      <Card className="border-0 shadow-sm flex flex-col">
-        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">备忘录</CardTitle>
-          {editingId && (
-            <Button variant="ghost" size="sm" onClick={resetForm}>取消编辑</Button>
+  const MemoFormDialog = (
+    <Dialog open={addOpen || !!editMemo} onOpenChange={(open) => { if (!open) { setAddOpen(false); setEditMemo(null); resetForm(); } }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{editMemo ? "编辑备忘录" : "添加备忘录"}</DialogTitle>
+          <DialogDescription className="text-xs text-slate-400">内容支持 Markdown 语法</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="memo-title" className="text-sm">标题</Label>
+            <Input id="memo-title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="备忘录标题…" required className="bg-slate-50 border-slate-200" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="memo-content" className="text-sm">内容 <span className="text-slate-400 font-normal text-xs">（支持 Markdown）</span></Label>
+            <Textarea id="memo-content" value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder="支持 **加粗**、*斜体*、`代码`、- 列表…" className="min-h-[120px] font-mono text-sm bg-slate-50 border-slate-200 resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">提醒时间</Label>
+              <Input type="datetime-local" value={form.remindAt} onChange={(e) => setForm((f) => ({ ...f, remindAt: e.target.value }))} className="bg-slate-50 border-slate-200 text-sm" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">图片附件</Label>
+              <Input type="file" accept="image/*" onChange={handleFile} className="bg-slate-50 border-slate-200 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary/10 file:text-primary" />
+            </div>
+          </div>
+          {form.imageDataUrl && (
+            <div className="relative rounded-md overflow-hidden h-28 bg-slate-100">
+              <img src={form.imageDataUrl} alt="预览" className="object-contain w-full h-full" />
+              <button type="button" onClick={() => setForm((f) => ({ ...f, imageDataUrl: "" }))} className="absolute top-1.5 right-1.5 bg-black/50 text-white rounded-full p-1 hover:bg-black/70">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
           )}
-        </CardHeader>
-        <CardContent className="p-0 grid md:grid-cols-2">
-          <div className="p-4 border-r border-slate-100 flex flex-col gap-4">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input placeholder="标题..." value={title} onChange={e => setTitle(e.target.value)} required className="bg-slate-50 border-0" />
-              <Textarea placeholder="内容..." value={content} onChange={e => setContent(e.target.value)} className="min-h-[90px] resize-none bg-slate-50 border-0" />
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">提醒时间</Label>
-                  <Input type="datetime-local" value={remindAt} onChange={e => setRemindAt(e.target.value)} className="bg-slate-50 border-0 text-sm" />
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">图片附件</Label>
-                  <Input type="file" accept="image/*" onChange={handleFileChange} className="bg-slate-50 border-0 text-sm file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-primary/10 file:text-primary" />
-                </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => { setAddOpen(false); setEditMemo(null); resetForm(); }}>取消</Button>
+            <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>
+              {createMut.isPending || updateMut.isPending ? "保存中…" : "保存"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const MemoViewDialog = (
+    <Dialog open={!!viewMemo} onOpenChange={(open) => { if (!open) setViewMemo(null); }}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="pr-8 text-lg">{viewMemo?.title}</DialogTitle>
+          <DialogDescription className="sr-only">备忘录详情</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-1 pr-1">
+          <div className="space-y-4 py-1">
+            {viewMemo?.content ? (
+              <div className="prose prose-sm prose-slate max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{viewMemo.content}</ReactMarkdown>
               </div>
-              {imageDataUrl && (
-                <div className="relative rounded-md overflow-hidden bg-slate-100 h-24 w-24">
-                  <img src={imageDataUrl} alt="preview" className="object-cover w-full h-full" />
-                  <button type="button" onClick={() => setImageDataUrl("")} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-              <Button type="submit" disabled={createMut.isPending || updateMut.isPending}>
-                {editingId ? "更新备忘录" : "添加备忘录"}
-              </Button>
-            </form>
-          </div>
-
-          <div className="bg-slate-50/50">
-            <ScrollArea className="h-[350px]">
-              {memos.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 text-sm">还没有备忘录，左侧创建一个吧。</div>
-              ) : (
-                <div className="divide-y border-slate-100">
-                  {memos.map(m => (
-                    <div
-                      key={m.id}
-                      className="p-4 hover:bg-white transition-colors group cursor-pointer"
-                      onClick={() => setViewMemo(m)}
-                    >
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-medium text-slate-900">{m.title}</h4>
-                        <span className="text-xs text-slate-400 opacity-0 group-hover:opacity-100 flex items-center gap-1 ml-2 shrink-0">
-                          点击查看
-                        </span>
-                      </div>
-                      {m.content && (
-                        <p className="text-sm text-slate-600 line-clamp-2 mb-2">{m.content}</p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
-                        {m.remindAt && (
-                          <span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-sm">
-                            <Clock className="w-3 h-3" /> {new Date(m.remindAt).toLocaleString('zh-CN')}
-                          </span>
-                        )}
-                        {m.imageDataUrl && (
-                          <span className="bg-slate-100 px-2 py-0.5 rounded-sm text-slate-600">附图片</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={!!viewMemo} onOpenChange={(open) => { if (!open) setViewMemo(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-xl pr-8">{viewMemo?.title}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {viewMemo?.content && (
-              <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{viewMemo.content}</p>
+            ) : (
+              <p className="text-sm text-slate-400 italic">无内容</p>
             )}
             {viewMemo?.remindAt && (
-              <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 rounded-md px-3 py-2">
-                <Clock className="w-4 h-4 shrink-0" />
-                提醒时间：{new Date(viewMemo.remindAt).toLocaleString('zh-CN')}
-                {viewMemo.reminderAcknowledgedAt && (
-                  <span className="ml-auto text-slate-400 text-xs">已确认</span>
-                )}
+              <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 rounded px-3 py-2">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                提醒：{new Date(viewMemo.remindAt).toLocaleString("zh-CN")}
+                {viewMemo.reminderAcknowledgedAt && <span className="ml-auto text-slate-400">已确认</span>}
               </div>
             )}
             {viewMemo?.imageDataUrl && (
-              <img src={viewMemo.imageDataUrl} alt="附件图片" className="rounded-lg w-full max-h-64 object-contain bg-slate-100" />
+              <img src={viewMemo.imageDataUrl} alt="附图" className="rounded-lg w-full max-h-52 object-contain bg-slate-100" />
             )}
-            <p className="text-xs text-slate-400">
-              更新于 {viewMemo && new Date(viewMemo.updatedAt).toLocaleString('zh-CN')}
+            <p className="text-[11px] text-slate-400">
+              更新于 {viewMemo && new Date(viewMemo.updatedAt).toLocaleString("zh-CN")}
             </p>
           </div>
-          <DialogFooter className="flex-row gap-2 sm:justify-between">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => { if (viewMemo) deleteMut.mutate({ id: viewMemo.id }); }}
-              disabled={deleteMut.isPending}
-            >
-              <Trash2 className="w-4 h-4 mr-1" /> 删除
+        </ScrollArea>
+        <DialogFooter className="flex-row justify-between pt-2 border-t border-slate-100 mt-2">
+          <Button variant="destructive" size="sm" onClick={() => viewMemo && deleteMut.mutate({ id: viewMemo.id })} disabled={deleteMut.isPending}>
+            <Trash2 className="w-3.5 h-3.5 mr-1" /> 删除
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setViewMemo(null)}>关闭</Button>
+            <Button size="sm" onClick={() => viewMemo && openEdit(viewMemo)}>
+              <Pencil className="w-3.5 h-3.5 mr-1" /> 编辑
             </Button>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setViewMemo(null)}>关闭</Button>
-              <Button size="sm" onClick={() => viewMemo && startEdit(viewMemo)}>
-                <Pencil className="w-4 h-4 mr-1" /> 编辑
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return (
+    <>
+      <Card className="border-0 shadow-sm h-full flex flex-col">
+        <CardHeader className="border-b border-slate-100 py-3 px-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-base font-semibold text-slate-700">备忘录</CardTitle>
+          <Button size="sm" onClick={openAdd} className="h-8 gap-1.5">
+            <Plus className="w-4 h-4" /> 添加备忘录
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0 flex-1">
+          <ScrollArea className="h-[420px]">
+            {memos.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-16 text-slate-400 gap-3">
+                <p className="text-sm">暂无备忘录</p>
+                <Button size="sm" variant="outline" onClick={openAdd} className="gap-1.5">
+                  <Plus className="w-3.5 h-3.5" /> 创建第一条
+                </Button>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:p-4 sm:gap-3">
+                {memos.map((m) => (
+                  <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} />
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      {MemoFormDialog}
+      {MemoViewDialog}
     </>
   );
 }
 
+function MemoCard({ memo, onClick }: { memo: any; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="group relative cursor-pointer rounded-xl border border-slate-100 bg-white hover:border-primary/30 hover:shadow-sm transition-all p-4"
+    >
+      <h3 className="font-semibold text-slate-900 text-sm mb-2 leading-snug pr-4 truncate">{memo.title}</h3>
+      {memo.content && (
+        <div className="prose prose-xs prose-slate max-w-none line-clamp-3 mb-3 text-xs leading-relaxed">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{memo.content}</ReactMarkdown>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5 flex-wrap mt-auto">
+        {memo.remindAt && (
+          <span className="inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+            <Clock className="w-2.5 h-2.5" />{new Date(memo.remindAt).toLocaleDateString("zh-CN")}
+          </span>
+        )}
+        {memo.imageDataUrl && (
+          <span className="inline-flex items-center gap-1 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+            <ImageIcon className="w-2.5 h-2.5" />图片
+          </span>
+        )}
+      </div>
+      <div className="absolute top-3 right-3 text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        点击查看
+      </div>
+    </div>
+  );
+}
+
 function CalendarHolidayPanel({ holidays }: { holidays: any[] }) {
-  const [month, setMonth] = useState<Date>(new Date());
-
+  const [month, setMonth] = useState(new Date());
   const holidayDates = holidays.map((h: any) => new Date(h.date + "T00:00:00"));
-
-  const holidayByDateStr = new Map<string, any[]>();
-  for (const h of holidays) {
-    const key = h.date;
-    if (!holidayByDateStr.has(key)) holidayByDateStr.set(key, []);
-    holidayByDateStr.get(key)!.push(h);
-  }
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-3 border-b border-slate-100">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5 text-primary" /> 日历与节假日
+      <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
+        <CardTitle className="text-base font-semibold text-slate-700 flex items-center gap-2">
+          <CalendarIcon className="w-4 h-4 text-primary" /> 日历与节假日
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -571,29 +576,31 @@ function CalendarHolidayPanel({ holidays }: { holidays: any[] }) {
               onMonthChange={setMonth}
               modifiers={{ holiday: holidayDates }}
               modifiersClassNames={{ holiday: "bg-red-100 text-red-700 font-semibold rounded-full" }}
-              className="w-full"
+              className="w-full max-w-xs"
             />
           </div>
           <div>
-            <ScrollArea className="h-[340px]">
-              <div className="p-4 space-y-1">
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">未来 90 天节假日</h4>
+            <ScrollArea className="h-[320px]">
+              <div className="p-4">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">未来 90 天节假日</p>
                 {holidays.length === 0 ? (
-                  <div className="text-sm text-slate-400 text-center py-8">近期没有节假日</div>
+                  <p className="text-sm text-slate-400 text-center py-8">近期没有节假日</p>
                 ) : (
-                  holidays.map((h: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 transition-colors gap-3">
-                      <div className="min-w-0">
-                        <div className="font-medium text-slate-900 text-sm truncate">{h.localName || h.name}</div>
-                        {h.localName && h.name !== h.localName && (
-                          <div className="text-xs text-slate-400 truncate">{h.name}</div>
-                        )}
+                  <div className="space-y-1">
+                    {holidays.map((h: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-slate-50 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{h.localName || h.name}</p>
+                          {h.localName && h.name !== h.localName && (
+                            <p className="text-xs text-slate-400 truncate">{h.name}</p>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded tabular-nums">
+                          {h.date}
+                        </span>
                       </div>
-                      <div className="shrink-0 text-sm font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-md tabular-nums">
-                        {h.date}
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
             </ScrollArea>
