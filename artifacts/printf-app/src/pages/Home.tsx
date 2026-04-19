@@ -387,7 +387,7 @@ function MemoPanel({ memos }: { memos: any[] }) {
         data: {
           title: memo.title,
           content: memo.content || null,
-          remindAt: memo.remindAt ? memo.remindAt.slice(0, 16) : null,
+          remindAt: memo.remindAt,
           imageDataUrl: memo.imageDataUrl || null,
           completedAt: completed ? new Date().toISOString() : null,
         },
@@ -501,6 +501,11 @@ function MemoPanel({ memos }: { memos: any[] }) {
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setViewMemo(null)}>关闭</Button>
+            {!viewMemo?.completedAt && (
+              <Button size="sm" variant="secondary" onClick={() => viewMemo && handleToggleComplete(viewMemo.id, true)} disabled={updateMut.isPending}>
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 标记完成
+              </Button>
+            )}
             <Button size="sm" onClick={() => viewMemo && openEdit(viewMemo)}>
               <Pencil className="w-3.5 h-3.5 mr-1" /> 编辑
             </Button>
