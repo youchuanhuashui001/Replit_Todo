@@ -167,7 +167,7 @@ function DashboardScreen({ user }: { user: any }) {
         <ClockPanel weather={bootstrap.weather} />
 
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6">
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 h-[420px]">
             <ReminderPanel memos={bootstrap.memos} />
             <CityManagerPanel cities={bootstrap.cities} />
           </div>
@@ -234,7 +234,7 @@ function ReminderPanel({ memos }: { memos: any[] }) {
   const active = memos.filter((m) => m.remindAt && !m.reminderAcknowledgedAt && new Date(m.remindAt) <= now);
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm flex flex-col grow min-h-0">
       <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
           <Clock className="w-4 h-4 text-primary" />
@@ -244,8 +244,8 @@ function ReminderPanel({ memos }: { memos: any[] }) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="max-h-[220px]">
+      <CardContent className="p-0 flex-1 min-h-0">
+        <ScrollArea className="h-full">
           {active.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-6">暂无到期提醒</p>
           ) : (
@@ -282,21 +282,21 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
   const setDefaultMut = useSetDefaultCity({ mutation: { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetBootstrapQueryKey() }) } });
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm flex flex-col grow min-h-0">
       <CardHeader className="pb-2 border-b border-slate-100 py-3 px-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-slate-700">
           <Cloud className="w-4 h-4 text-primary" /> 城市管理
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 space-y-3">
-        <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) searchMut.mutate({ data: { query } }); }} className="flex gap-1.5">
+      <CardContent className="p-3 space-y-3 flex-1 flex flex-col min-h-0">
+        <form onSubmit={(e) => { e.preventDefault(); if (query.trim()) searchMut.mutate({ data: { query } }); }} className="flex gap-1.5 flex-shrink-0">
           <Input placeholder="搜索城市…" value={query} onChange={(e) => setQuery(e.target.value)} className="bg-slate-50 border-0 h-8 text-sm" />
-          <Button type="submit" variant="secondary" size="sm" className="h-8 px-2.5" disabled={searchMut.isPending}>
+          <Button type="submit" variant="secondary" size="sm" className="h-8 px-2.5 flex-shrink-0" disabled={searchMut.isPending}>
             <Search className="w-3.5 h-3.5" />
           </Button>
         </form>
         {searchMut.data?.results && searchMut.data.results.length > 0 && (
-          <div className="bg-white border rounded-md overflow-hidden shadow-sm divide-y text-xs">
+          <div className="bg-white border rounded-md overflow-hidden shadow-sm divide-y text-xs flex-shrink-0">
             {searchMut.data.results.map((r: any, i: number) => (
               <div key={i} className="px-2.5 py-1.5 flex items-center justify-between">
                 <span className="text-slate-700">{r.name} <span className="text-slate-400">{r.admin1}</span></span>
@@ -305,28 +305,30 @@ function CityManagerPanel({ cities }: { cities: any[] }) {
             ))}
           </div>
         )}
-        <div className="space-y-1">
-          {cities.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-2">暂无城市</p>
-          ) : (
-            cities.map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between text-xs p-1.5 rounded hover:bg-slate-50 group">
-                <span className="flex items-center gap-1.5 text-slate-700">
-                  {c.name}
-                  {c.isDefault && <span className="bg-primary/10 text-primary text-[10px] px-1 py-px rounded leading-none">默认</span>}
-                </span>
-                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
-                  {!c.isDefault && (
-                    <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => setDefaultMut.mutate({ id: c.id })}>设默认</Button>
-                  )}
-                  <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400" onClick={() => deleteCityMut.mutate({ id: c.id })}>
-                    <X className="w-3 h-3" />
-                  </Button>
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-1 pr-3">
+            {cities.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-2">暂无城市</p>
+            ) : (
+              cities.map((c: any) => (
+                <div key={c.id} className="flex items-center justify-between text-xs p-1.5 rounded hover:bg-slate-50 group">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    {c.name}
+                    {c.isDefault && <span className="bg-primary/10 text-primary text-[10px] px-1 py-px rounded leading-none">默认</span>}
+                  </span>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100">
+                    {!c.isDefault && (
+                      <Button size="sm" variant="ghost" className="h-5 px-1.5 text-[10px]" onClick={() => setDefaultMut.mutate({ id: c.id })}>设默认</Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400" onClick={() => deleteCityMut.mutate({ id: c.id })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
@@ -373,6 +375,22 @@ function MemoPanel({ memos }: { memos: any[] }) {
     });
     setViewMemo(null);
     setEditMemo(m);
+  };
+
+  const handleToggleComplete = (id: string, completed: boolean) => {
+    const memo = memos.find((m) => m.id === id);
+    if (memo) {
+      updateMut.mutate({
+        id,
+        data: {
+          title: memo.title,
+          content: memo.content || null,
+          remindAt: memo.remindAt ? memo.remindAt.slice(0, 16) : null,
+          imageDataUrl: memo.imageDataUrl || null,
+          completedAt: completed ? new Date().toISOString() : null,
+        },
+      });
+    }
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -511,7 +529,7 @@ function MemoPanel({ memos }: { memos: any[] }) {
             ) : (
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-0 divide-y sm:divide-y-0 sm:p-4 sm:gap-3">
                 {memos.map((m) => (
-                  <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} />
+                  <MemoCard key={m.id} memo={m} onClick={() => setViewMemo(m)} onToggleComplete={handleToggleComplete} />
                 ))}
               </div>
             )}
@@ -525,14 +543,37 @@ function MemoPanel({ memos }: { memos: any[] }) {
   );
 }
 
-function MemoCard({ memo, onClick }: { memo: any; onClick: () => void }) {
+function MemoCard({ memo, onClick, onToggleComplete }: { memo: any; onClick: () => void; onToggleComplete: (id: string, completed: boolean) => void }) {
+  const isCompleted = !!memo.completedAt;
   return (
     <div
+      className={`group relative cursor-pointer rounded-xl border bg-white transition-all p-4 ${
+        isCompleted
+          ? "border-slate-200 bg-slate-50 opacity-60"
+          : "border-slate-100 hover:border-primary/30 hover:shadow-sm"
+      }`}
       onClick={onClick}
-      className="group relative cursor-pointer rounded-xl border border-slate-100 bg-white hover:border-primary/30 hover:shadow-sm transition-all p-4"
     >
-      <h3 className="font-semibold text-slate-900 text-sm mb-2 leading-snug pr-4 truncate">{memo.title}</h3>
-      {memo.content && (
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h3 className={`font-semibold text-sm leading-snug flex-1 ${isCompleted ? "line-through text-slate-400" : "text-slate-900"}`}>
+          {memo.title}
+        </h3>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleComplete(memo.id, !isCompleted);
+          }}
+          className="flex-shrink-0 text-slate-400 hover:text-primary transition-colors"
+          title={isCompleted ? "标记为未完成" : "标记为已完成"}
+        >
+          {isCompleted ? (
+            <CheckCircle2 className="w-5 h-5 text-primary" />
+          ) : (
+            <div className="w-5 h-5 border-2 border-slate-300 rounded-full hover:border-primary" />
+          )}
+        </button>
+      </div>
+      {memo.content && !isCompleted && (
         <div className="prose prose-xs prose-slate max-w-none line-clamp-3 mb-3 text-xs leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{memo.content}</ReactMarkdown>
         </div>

@@ -42,7 +42,7 @@ router.post("/memos", async (req, res): Promise<void> => {
 router.put("/memos/:id", async (req, res): Promise<void> => {
   const userId = getUserId(req);
   const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const { title, content, remindAt, imageDataUrl } = req.body as { title?: string; content?: string; remindAt?: string | null; imageDataUrl?: string | null };
+  const { title, content, remindAt, imageDataUrl, completedAt } = req.body as { title?: string; content?: string; remindAt?: string | null; imageDataUrl?: string | null; completedAt?: string | null };
 
   if (!title || !title.trim()) {
     res.status(400).json({ error: "标题不能为空" });
@@ -64,6 +64,7 @@ router.put("/memos/:id", async (req, res): Promise<void> => {
     remindAt: newRemindAt,
     imageDataUrl: imageDataUrl || null,
     reminderAcknowledgedAt,
+    completedAt: completedAt ? new Date(completedAt) : null,
     updatedAt: new Date(),
   }).where(and(eq(memosTable.id, rawId), eq(memosTable.userId, userId))).returning();
 
@@ -102,6 +103,7 @@ function serializeMemo(memo: typeof memosTable.$inferSelect) {
     ...memo,
     remindAt: memo.remindAt?.toISOString() || null,
     reminderAcknowledgedAt: memo.reminderAcknowledgedAt?.toISOString() || null,
+    completedAt: memo.completedAt?.toISOString() || null,
     createdAt: memo.createdAt.toISOString(),
     updatedAt: memo.updatedAt.toISOString(),
   };

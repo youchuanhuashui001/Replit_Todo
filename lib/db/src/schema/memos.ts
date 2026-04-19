@@ -10,6 +10,7 @@ export const memosTable = pgTable("memos", {
   imageDataUrl: text("image_data_url"),
   remindAt: timestamp("remind_at", { withTimezone: true }),
   reminderAcknowledgedAt: timestamp("reminder_acknowledged_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
