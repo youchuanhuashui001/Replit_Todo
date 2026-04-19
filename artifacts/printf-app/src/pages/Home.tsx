@@ -506,6 +506,11 @@ function MemoPanel({ memos }: { memos: any[] }) {
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 标记完成
               </Button>
             )}
+            {viewMemo?.completedAt && (
+              <Button size="sm" variant="secondary" onClick={() => viewMemo && handleToggleComplete(viewMemo.id, false)} disabled={updateMut.isPending}>
+                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> 恢复未完成
+              </Button>
+            )}
             <Button size="sm" onClick={() => viewMemo && openEdit(viewMemo)}>
               <Pencil className="w-3.5 h-3.5 mr-1" /> 编辑
             </Button>
